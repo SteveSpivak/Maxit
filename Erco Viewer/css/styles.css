@@ -1,0 +1,456 @@
+:root {
+    --brand-primary: #0012B8;
+    --brand-accent: #0EFF6E;
+    --brand-white: #FFFFFF;
+    --brand-light: #f0f4ff;
+    --brand-dark: #000B6B;
+    --brand-gray: #f0f2f5;
+    --transition-speed: 0.3s;
+    --border-radius: 12px;
+    --shadow-sm: 0 2px 8px rgba(0, 18, 184, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 18, 184, 0.15);
+    --shadow-lg: 0 8px 24px rgba(0, 18, 184, 0.2);
+}
+
+/* Main Styling */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f9f9f9;
+    padding-top: 20px;
+    color: #333;
+}
+
+.category-filter {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+/* Card Styling */
+.card {
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border: none;
+    margin-bottom: 20px;
+    overflow: hidden;
+    transition: all var(--transition-speed) ease;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding: 15px 20px;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+h1, h2, h3, h4, h5 {
+    font-weight: 600;
+}
+
+h1 {
+    color: var(--brand-primary);
+    margin-bottom: 1.5rem;
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: var(--brand-primary);
+    border-color: var(--brand-primary);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--brand-dark);
+    border-color: var(--brand-dark);
+    box-shadow: 0 4px 10px rgba(0, 18, 184, 0.3);
+}
+
+.btn-success {
+    background-color: var(--brand-accent);
+    border-color: var(--brand-accent);
+    color: var(--brand-primary);
+}
+
+.btn-success:hover,
+.btn-success:focus {
+    background-color: #0cdb5e;
+    border-color: #0cdb5e;
+    color: var(--brand-primary);
+    box-shadow: 0 4px 10px rgba(14, 255, 110, 0.3);
+}
+
+.btn-outline-primary {
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+    background-color: var(--brand-primary);
+    border-color: var(--brand-primary);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    padding: 10px 15px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(0, 18, 184, 0.25);
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.spinner-border {
+    color: var(--brand-primary) !important;
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Product Cards */
+.product-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+}
+
+.product-image {
+    max-height: 160px;
+    object-fit: contain;
+    margin-bottom: 15px;
+    transition: transform 0.3s ease;
+}
+
+.product-image:hover {
+    transform: scale(1.05);
+}
+
+.grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.product-card .product-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 15px 0 8px;
+    color: var(--brand-primary);
+}
+
+.product-card .product-price {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 8px 0;
+    color: #333;
+}
+
+.product-card .btn-group {
+    margin-top: auto;
+}
+
+/* Stats Cards */
+.stat-card {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    height: 100%;
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #3498db;
+}
+
+/* Filter Section */
+.filter-section {
+    background: #fff;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.filter-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 5px 0;
+}
+
+.filter-content {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px 0;
+}
+
+/* Search Box */
+.search-container {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.search-container input {
+    padding-right: 40px;
+    border-radius: 20px;
+}
+
+.search-container .search-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+
+/* Custom Button Styles */
+.btn-toggle-view {
+    border-radius: 5px;
+    padding: 5px 15px;
+    transition: all 0.2s;
+}
+
+.btn-toggle-view.active {
+    background-color: #3498db;
+    color: white;
+}
+
+/* DataTables Customization */
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+    margin-bottom: 15px;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Loading Spinner */
+#loadingSpinner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.9);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+/* Calculator Floating Button */
+#show-calculator-btn {
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.calculator-floating-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1030;
+    transition: all 0.3s ease;
+}
+
+.calculator-floating-container:hover {
+    transform: translateY(-5px);
+}
+
+.calculator-float-btn {
+    background-color: var(--brand-primary);
+    color: white;
+    border-radius: 50px;
+    padding: 10px 20px;
+    box-shadow: var(--shadow-md);
+    border: none;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.calculator-float-btn:hover {
+    background-color: var(--brand-dark);
+    box-shadow: var(--shadow-lg);
+}
+
+.calculator-btn-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.calculator-icon {
+    font-size: 1.25rem;
+}
+
+/* Calculator Panel */
+.calculator-panel {
+    width: 600px;
+    max-width: 90vw;
+}
+
+.calculator-products-container {
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.result-summary .row {
+    border-radius: 4px;
+}
+
+/* Tab styling */
+.nav-tabs .nav-link {
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+    font-weight: 600;
+    color: var(--brand-primary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .calculator-panel {
+        width: 100%;
+    }
+
+    .calculator-text {
+        display: none;
+    }
+
+    .calculator-float-btn {
+        width: 60px;
+        height: 60px;
+        padding: 0;
+    }
+
+    .calculator-icon {
+        font-size: 1.5rem;
+    }
+}
+
+/* Modal Improvements */
+.modal-header {
+    border-radius: 10px 10px 0 0;
+}
+
+.modal-content {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Status Message */
+#statusMessage {
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* Calculator Modal Styling */
+#calculatorPanel .modal-dialog {
+    max-width: 80vw;
+    margin: 1.75rem auto;
+}
+
+#calculatorPanel .modal-content {
+    border-radius: var(--border-radius);
+    border: none;
+    box-shadow: var(--shadow-lg);
+}
+
+#calculatorPanel .modal-header {
+    padding: 1rem 1.5rem;
+    background-color: var(--brand-primary);
+    color: var(--brand-white);
+}
+
+#calculatorPanel .modal-body {
+    padding: 0;
+}
+
+#calculatorPanel .calculator-products-container {
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+/* Make sure tab panes have proper height */
+#calculatorPanel .tab-content {
+    min-height: 60vh;
+}
+
+/* Maintain the calculator button styling */
+.calculator-floating-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1030;
+    transition: all 0.3s ease;
+}

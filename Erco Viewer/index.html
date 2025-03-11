@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת צפייה במוצרי Erco</title>
+
+    <!-- CSS Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link href="css/styles.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .product-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .product-image {
+            max-height: 150px;
+            object-fit: contain;
+        }
+
+        .stat-card {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        /* Improved filter styling */
+        .filter-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .filter-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .filter-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* Update loader style */
+        #loadingSpinner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.8);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" style="display: none;">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">טוען...</span>
+        </div>
+        <p>טוען נתונים, אנא המתן...</p>
+        <div class="progress mt-2" style="width: 300px; display: none;" id="priceUpdateProgress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <header class="mb-4">
+            <h1 class="text-center mb-3">מערכת צפייה במוצרי Erco</h1>
+            <div class="alert alert-info" id="statusMessage" role="alert">
+                טוען נתונים אוטומטית... אנא המתן
+            </div>
+        </header>
+
+        <!-- Data Upload Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">טעינת נתונים</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="csvFile" class="form-label">קובץ CSV מוצרים:</label>
+                        <input type="file" class="form-control" id="csvFile" accept=".csv">
+                        <small class="form-text text-muted">נטען אוטומטית: <span id="defaultCsvName">products.csv</span></small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="categoriesFile" class="form-label">קובץ קטגוריות (אופציונלי):</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="categoriesFile" accept=".csv,.json">
+                            <span class="input-group-text" data-bs-toggle="tooltip" title="ניתן להשתמש בקובץ JSON או CSV">
+                                <i class="fas fa-question-circle"></i>
+                            </span>
+                        </div>
+                        <small class="form-text text-muted">נטען אוטומטית: <span id="defaultCategoriesName">categories.json</span></small>
+                    </div>
+                </div>
+
+                <div class="row mt-2">
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="fetchLivePrices">
+                            <label class="form-check-label" for="fetchLivePrices">
+                                עדכון מחירים בזמן אמת
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3 text-md-end">
+                        <button class="btn btn-primary" id="loadDataBtn">
+                            <i class="fas fa-download"></i> טען נתונים מחדש
+                        </button>
+                        <button class="btn btn-secondary ms-2" id="resetDataBtn">
+                            <i class="fas fa-redo"></i> איפוס
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- File loading section (hidden by default, shown as fallback) -->
+        <div id="loadDataContainer" class="mb-4" style="display: none;">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Load Product Data</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="csvFileInput" class="form-label">Select CSV File</label>
+                        <input type="file" class="form-control" id="csvFileInput" accept=".csv">
+                    </div>
+                    <button id="loadDataBtn" class="btn btn-primary">Load Data</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="mainContent" style="display: none;">
+            <!-- Statistics Row -->
+            <div class="row mb-4" id="statsRow">
+                <!-- Stats cards will be inserted here -->
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="row mb-4">
+                <!-- Filters Column -->
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">סינון מוצרים</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Category Filter -->
+                            <div class="filter-section mb-3">
+                                <h6 class="filter-heading">
+                                    <span>קטגוריות</span>
+                                </h6>
+                                <div class="filter-content" id="categoryFilter">
+                                    <!-- Categories will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Brand Filter -->
+                            <div class="filter-section mb-3">
+                                <h6 class="filter-heading">
+                                    <span>מותגים</span>
+                                </h6>
+                                <div class="filter-content" id="brandFilter">
+                                    <!-- Brands will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Price Filter -->
+                            <div class="filter-section mb-3">
+                                <h6 class="filter-heading">
+                                    <span>טווח מחירים</span>
+                                </h6>
+                                <div class="filter-content">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <label for="minPrice" class="form-label">מחיר מינימלי:</label>
+                                            <input type="number" class="form-control form-control-sm" id="minPrice" min="0">
+                                        </div>
+                                        <div class="col-6">
+                                            <label for="maxPrice" class="form-label">מחיר מקסימלי:</label>
+                                            <input type="number" class="form-control form-control-sm" id="maxPrice" min="0">
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm btn-primary" id="applyPriceFilter">החל סינון</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Clear Filters Button -->
+                            <button class="btn btn-secondary w-100" id="clearFilters">
+                                <i class="fas fa-undo"></i> נקה את כל הסינונים
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Column -->
+                <div class="col-md-9">
+                    <!-- Search and View Controls -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex">
+                            <div class="input-group me-2" style="width: 300px;">
+                                <input type="text" class="form-control" id="searchBox" placeholder="חיפוש במוצרים">
+                                <button class="btn btn-primary" id="searchBtn">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-outline-secondary btn-toggle-view active" data-view="table" id="tableViewBtn">
+                                    <i class="fas fa-table"></i> טבלה
+                                </button>
+                                <button class="btn btn-outline-secondary btn-toggle-view" data-view="grid" id="gridViewBtn">
+                                    <i class="fas fa-th"></i> תצוגת רשת
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-success me-1" id="exportCsvBtn">
+                                <i class="fas fa-file-csv"></i> ייצא CSV
+                            </button>
+                            <button class="btn btn-success" id="exportExcelBtn">
+                                <i class="fas fa-file-excel"></i> ייצא לאקסל
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Table View -->
+                    <div id="tableContainer" class="view-container">
+                        <div class="table-responsive">
+                            <table id="productsTable" class="table table-striped table-bordered" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>שם מוצר</th>
+                                        <th>מק"ט</th>
+                                        <th>מותג</th>
+                                        <th>מחיר</th>
+                                        <th>קטגוריה</th>
+                                        <th>פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Products will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Grid View -->
+                    <div id="gridContainer" class="view-container grid-view" style="display: none;">
+                        <!-- Products will be loaded here in grid format -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal fade" id="productDetailModal" tabindex="-1" aria-labelledby="productDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="productDetailModalLabel">פרטי מוצר</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="productDetailContent">
+                    <!-- Product details will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator Modal (Changed from Offcanvas) -->
+    <div class="modal fade" tabindex="-1" id="calculatorPanel" aria-labelledby="calculatorPanelLabel">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="calculatorPanelLabel">
+                        <i class="fas fa-calculator me-2"></i> מחשבון מחירים
+                    </h5>
+                    <button type="button" class="btn-close text-reset" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- Calculator tabs -->
+                    <ul class="nav nav-tabs nav-fill sticky-top bg-white" id="calculatorTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-tab-pane" type="button" role="tab">
+                                <i class="fas fa-shopping-cart me-1"></i> מוצרים <span class="badge bg-primary" id="selected-count">0</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="work-tab" data-bs-toggle="tab" data-bs-target="#work-tab-pane" type="button" role="tab">
+                                <i class="fas fa-tools me-1"></i> עבודה
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-tab-pane" type="button" role="tab">
+                                <i class="fas fa-cog me-1"></i> הגדרות
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results-tab-pane" type="button" role="tab">
+                                <i class="fas fa-file-invoice-dollar me-1"></i> תוצאות
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="calculatorTabContent">
+                        <!-- Products Tab -->
+                        <div class="tab-pane fade show active p-3" id="products-tab-pane" role="tabpanel" tabindex="0">
+                            <div class="d-flex justify-content-between mb-3">
+                                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#customProductModal">
+                                    <i class="fas fa-plus"></i> הוסף מוצר מותאם אישית
+                                </button>
+                                <button class="btn btn-danger" id="clear-calculator-btn">
+                                    <i class="fas fa-trash"></i> נקה הכל
+                                </button>
+                            </div>
+
+                            <div class="table-responsive calculator-products-container">
+                                <table class="table table-sm table-hover" id="calculator-products">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 30%">מוצר</th>
+                                            <th style="width: 15%">מק"ט</th>
+                                            <th style="width: 15%">מחיר יח'</th>
+                                            <th style="width: 10%">כמות</th>
+                                            <th style="width: 15%">סה"כ</th>
+                                            <th style="width: 15%">פעולות</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Selected products will be loaded here -->
+                                    </tbody>
+                                    <tfoot class="table-secondary">
+                                        <tr>
+                                            <th colspan="4" class="text-start">סה"כ מוצרים:</th>
+                                            <th id="products-subtotal">₪0</th>
+                                            <th></th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                            <div class="mt-3">
+                                <button class="btn btn-outline-primary w-100" id="add-more-products-btn">
+                                    <i class="fas fa-search-plus"></i> הוסף מוצרים נוספים מהקטלוג
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Work Tab -->
+                        <div class="tab-pane fade p-3" id="work-tab-pane" role="tabpanel" tabindex="0">
+                            <div class="card mb-3">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">יחידות עבודה</h6>
+                                    <button class="btn btn-sm btn-outline-primary" id="add-work-unit-btn">
+                                        <i class="fas fa-plus"></i> הוסף יחידת עבודה
+                                    </button>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm mb-0" id="work-units-table">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>תיאור</th>
+                                                    <th>יחידת עבודה</th>
+                                                    <th>מחיר ליחידה</th>
+                                                    <th>כמות</th>
+                                                    <th>סה"כ</th>
+                                                    <th>פעולות</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- Work units will be populated here -->
+                                            </tbody>
+                                            <tfoot class="table-secondary">
+                                                <tr>
+                                                    <th colspan="4" class="text-start">סה"כ עבודה:</th>
+                                                    <th id="work-subtotal">₪0</th>
+                                                    <th></th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">עלויות עובדים</h6>
+                                    <button class="btn btn-sm btn-outline-primary" id="manage-employees-btn">
+                                        <i class="fas fa-users"></i> ניהול עובדים
+                                    </button>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm mb-0" id="employees-table">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>שם העובד</th>
+                                                    <th>שעות עבודה</th>
+                                                    <th>עלות לשעה</th>
+                                                    <th>סה"כ</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- Employee costs will be populated here -->
+                                                <tr class="text-center text-muted">
+                                                    <td colspan="4" class="py-3">
+                                                        <i class="fas fa-user-plus fa-2x mb-2"></i>
+                                                        <p>לא נוספו עובדים כרגע</p>
+                                                        <button class="btn btn-sm btn-outline-primary" id="add-first-employee-btn">
+                                                            הוסף עובד
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                            <tfoot class="table-secondary">
+                                                <tr>
+                                                    <th colspan="3" class="text-start">סה"כ עלות עובדים:</th>
+                                                    <th id="employees-subtotal">₪0</th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings Tab -->
+                        <div class="tab-pane fade p-3" id="settings-tab-pane" role="tabpanel" tabindex="0">
+                            <!-- Project Info -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-project-diagram me-2"></i> פרטי פרויקט</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">שם פרויקט</label>
+                                        <input type="text" class="form-control" id="project-name" placeholder="הזן שם פרויקט">
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">לקוח</label>
+                                            <input type="text" class="form-control" id="project-client" placeholder="שם הלקוח">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">מיקום</label>
+                                            <input type="text" class="form-control" id="project-location" placeholder="מיקום הפרויקט">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">תאריך</label>
+                                            <input type="date" class="form-control" id="project-date">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">מבקש</label>
+                                            <input type="text" class="form-control" id="project-requestor" placeholder="שם המבקש">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Markup Settings -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-percentage me-2"></i> הגדרות תמחור</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label d-flex justify-content-between">
+                                            <span>תוספת ראשונית</span>
+                                            <span class="badge bg-primary"><span id="primary-markup-value">15</span>%</span>
+                                        </label>
+                                        <div class="d-flex align-items-center">
+                                            <input type="range" class="form-range flex-grow-1" id="primary-markup-range" min="0" max="100" value="15">
+                                            <div class="input-group ms-2" style="width: 100px;">
+                                                <input type="number" class="form-control" id="primary-markup" min="0" max="100" value="15">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label d-flex justify-content-between">
+                                            <span>תוספת משנית</span>
+                                            <span class="badge bg-primary"><span id="secondary-markup-value">15</span>%</span>
+                                        </label>
+                                        <div class="d-flex align-items-center">
+                                            <input type="range" class="form-range flex-grow-1" id="secondary-markup-range" min="0" max="100" value="15">
+                                            <div class="input-group ms-2" style="width: 100px;">
+                                                <input type="number" class="form-control" id="secondary-markup" min="0" max="100" value="15">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Project Management -->
+                            <div class="d-flex justify-content-between">
+                                <div class="btn-group">
+                                    <button class="btn btn-primary" id="save-project-btn">
+                                        <i class="fas fa-save"></i> שמור פרויקט
+                                    </button>
+                                    <button class="btn btn-outline-primary" id="export-project-btn">
+                                        <i class="fas fa-file-export"></i> ייצא
+                                    </button>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-info" id="load-project-btn">
+                                        <i class="fas fa-folder-open"></i> טען פרויקט
+                                    </button>
+                                    <button class="btn btn-outline-info" id="import-project-btn">
+                                        <i class="fas fa-file-import"></i> ייבא
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results Tab -->
+                        <div class="tab-pane fade p-3" id="results-tab-pane" role="tabpanel" tabindex="0">
+                            <div class="card">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">סיכום הצעת מחיר</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="result-summary">
+                                        <div class="row mb-2 p-2">
+                                            <div class="col-md-8 fw-bold">עלות בסיס (ללא תוספות):</div>
+                                            <div class="col-md-4 text-end fw-bold" id="result-base-total">₪0</div>
+                                        </div>
+                                        <div class="row mb-2 p-2 bg-light">
+                                            <div class="col-md-8">מוצרים:</div>
+                                            <div class="col-md-4 text-end" id="result-products-total">₪0</div>
+                                        </div>
+                                        <div class="row mb-2 p-2 bg-light">
+                                            <div class="col-md-8">עבודה:</div>
+                                            <div class="col-md-4 text-end" id="result-work-total">₪0</div>
+                                        </div>
+                                        <div class="row mb-2 p-2 bg-light">
+                                            <div class="col-md-8">עלות עובדים:</div>
+                                            <div class="col-md-4 text-end" id="result-employee-total">₪0</div>
+                                        </div>
+                                        <div class="row mb-2 p-2">
+                                            <div class="col-md-8">תוספת ראשונית (<span id="result-primary-markup-percent">15</span>%):</div>
+                                            <div class="col-md-4 text-end" id="result-primary-markup">₪0</div>
+                                        </div>
+                                        <div class="row mb-2 p-2 bg-light fw-bold">
+                                            <div class="col-md-8">עלות אחרי תוספת ראשונית:</div>
+                                            <div class="col-md-4 text-end" id="result-after-primary">₪0</div>
+                                        </div>
+                                        <div class="row mb-2 p-2">
+                                            <div class="col-md-8">תוספת משנית (<span id="result-secondary-markup-percent">15</span>%):</div>
+                                            <div class="col-md-4 text-end" id="result-secondary-markup">₪0</div>
+                                        </div>
+                                        <div class="row mb-2 p-2 bg-primary text-white fw-bold">
+                                            <div class="col-md-8 fs-5">סה"כ לפרויקט:</div>
+                                            <div class="col-md-4 text-end fs-4" id="result-grand-total">₪0</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between mt-4">
+                                        <button class="btn btn-success" id="export-quote-btn">
+                                            <i class="fas fa-file-pdf"></i> ייצא הצעת מחיר
+                                        </button>
+                                        <button class="btn btn-primary" id="export-calc-btn">
+                                            <i class="fas fa-file-excel"></i> ייצא חישוב לאקסל
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">סגור</button>
+                    <button type="button" class="btn btn-primary" id="save-calculator-btn">שמור</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Work Unit Modal -->
+    <div class="modal fade" id="workUnitModal" tabindex="-1" aria-labelledby="workUnitModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="workUnitModalLabel">הוסף יחידת עבודה</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="work-description" class="form-label">תיאור העבודה</label>
+                        <input type="text" class="form-control" id="work-description" required placeholder="לדוגמה: התקנת גופי תאורה">
+                    </div>
+                    <div class="mb-3">
+                        <label for="work-unit-type" class="form-label">סוג יחידת עבודה</label>
+                        <select class="form-select" id="work-unit-type">
+                            <option value="meter">מטר</option>
+                            <option value="point">נקודה</option>
+                            <option value="unit">יחידה</option>
+                            <option value="hour">שעה</option>
+                            <option value="day">יום עבודה</option>
+                            <option value="area">מ"ר</option>
+                            <option value="custom">מותאם אישית</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="custom-unit-container" style="display: none;">
+                        <label for="custom-unit-name" class="form-label">שם יחידה מותאמת</label>
+                        <input type="text" class="form-control" id="custom-unit-name" placeholder="הזן שם יחידה">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="work-price" class="form-label">מחיר ליחידה</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="work-price" min="0" step="0.01" required>
+                                <span class="input-group-text">₪</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="work-quantity" class="form-label">כמות</label>
+                            <input type="number" class="form-control" id="work-quantity" min="0.1" step="0.1" value="1" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ביטול</button>
+                    <button type="button" class="btn btn-primary" id="add-work-unit-confirm">הוסף</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Product Modal -->
+    <div class="modal fade" id="customProductModal" tabindex="-1" aria-labelledby="customProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="customProductModalLabel">הוסף מוצר מותאם אישית</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="custom-product-name" class="form-label">שם המוצר</label>
+                        <input type="text" class="form-control" id="custom-product-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="custom-product-sku" class="form-label">מק"ט (אופציונלי)</label>
+                        <input type="text" class="form-control" id="custom-product-sku" placeholder="יתמלא אוטומטית אם ריק">
+                    </div>
+                    <div class="mb-3">
+                        <label for="custom-product-price" class="form-label">מחיר</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="custom-product-price" min="0" step="0.01" required>
+                            <span class="input-group-text">₪</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="custom-product-quantity" class="form-label">כמות</label>
+                        <input type="number" class="form-control" id="custom-product-quantity" min="1" value="1">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ביטול</button>
+                    <button type="button" class="btn btn-primary" id="add-custom-product-btn">הוסף מוצר</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Added libraries for better filtering -->
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
+
+
+    <!-- App Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/core.js"></script>
+    <script src="js/data-loader.js"></script>
+    <script src="js/filters.js"></script>
+    <script src="js/table.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/calculator.js"></script>
+    <script src="js/project.js"></script>
+    <script src="js/auto-loader.js"></script>
+</body>
+</html>
